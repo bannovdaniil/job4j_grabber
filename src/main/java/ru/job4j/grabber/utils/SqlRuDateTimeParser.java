@@ -1,7 +1,8 @@
 package ru.job4j.grabber.utils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalTime;
 import java.util.Map;
 
 import static java.util.Map.entry;
@@ -38,25 +39,18 @@ public class SqlRuDateTimeParser implements DateTimeParser {
         }
         String[] part = parse.split(",\\s+");
         String[] dmy = part[0].split(" ");
-        LocalDateTime date = LocalDateTime.now();
-        int day = date.getDayOfMonth();
-        int month = date.getMonthValue();
-        int year = date.getYear();
         String[] hm = part[1].split(":");
-        int hh = Integer.parseInt(hm[0]);
-        int mm = Integer.parseInt(hm[1]);
+        LocalTime lt = LocalTime.of(Integer.parseInt(hm[0]), Integer.parseInt(hm[1]));
+        LocalDate date = LocalDate.now();
         if (dmy.length == 3) {
             if (MONTHS.containsKey(dmy[1])) {
-                day = Integer.parseInt(dmy[0]);
-                month = MONTHS.get(dmy[1]);
-                year = Integer.parseInt("20" + dmy[2]);
+                date = LocalDate.of(Integer.parseInt("20" + dmy[2]),
+                        MONTHS.get(dmy[1]),
+                        Integer.parseInt(dmy[0]));
             }
-        } else if ("вчера".equals(part[1])) {
-            date = date.minus(1, ChronoUnit.DAYS);
-            day = date.getDayOfMonth();
-            month = date.getMonthValue();
-            year = date.getYear();
+        } else if ("вчера".equals(part[0])) {
+            date = date.minusDays(1);
         }
-        return LocalDateTime.of(year, month, day, hh, mm);
+        return LocalDateTime.of(date, lt);
     }
 }
