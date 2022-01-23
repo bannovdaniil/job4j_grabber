@@ -13,10 +13,12 @@ import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
 
 public class AlertRabbit {
+
     public static void main(String[] args) {
         AlertRabbit rabbit = new AlertRabbit();
-        try (Connection connection = rabbit.connectBase("rabbit.properties")) {
-            int rabbitInteval = rabbit.getRabbitInteval("rabbit.properties", "rabbit.interval");
+        Properties config = initProperties("rabbit.properties");
+        try (Connection connection = rabbit.connectBase(config)) {
+            int rabbitInteval = Integer.parseInt(config.getProperty("rabbit.interval"));
             Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
             scheduler.start();
             JobDataMap jdata = new JobDataMap();
@@ -41,44 +43,34 @@ public class AlertRabbit {
     }
 
     /**
-     * получить из файла конфигурации ключ
-     *
-     * @param configFile - файл
-     * @param nameProp   - имя ключа
-     * @return - значение ключа
-     * @throws IOException - выкинуть на верх
+     * подгружаем файл конфигурации
      */
-    private int getRabbitInteval(String configFile, String nameProp) throws IOException {
-        int rabbitInteval = 10;
+    private static Properties initProperties(String configFile) {
+        Properties config = new Properties();
         try (InputStream in = AlertRabbit.class.getClassLoader()
                 .getResourceAsStream(configFile)) {
-            Properties config = new Properties();
             config.load(in);
-            rabbitInteval = Integer.parseInt(config.getProperty(nameProp));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return rabbitInteval;
+        return config;
     }
 
     /**
      * Производит подключение к базе
      *
-     * @param configFile - файл с настройками
+     * @param config - контейнер с настройками
      * @return - конект к базе
      * @throws Exception - все что есть выкидываем на верх
      */
-    private Connection connectBase(String configFile) throws Exception {
+    private Connection connectBase(Properties config) throws SQLException, ClassNotFoundException {
         Connection cn;
-        try (InputStream in = AlertRabbit.class.getClassLoader()
-                .getResourceAsStream(configFile)) {
-            Properties config = new Properties();
-            config.load(in);
-            Class.forName(config.getProperty("driver-class-name"));
-            cn = DriverManager.getConnection(
-                    config.getProperty("url"),
-                    config.getProperty("username"),
-                    config.getProperty("password")
-            );
-        }
+        Class.forName(config.getProperty("driver-class-name"));
+        cn = DriverManager.getConnection(
+                config.getProperty("url"),
+                config.getProperty("username"),
+                config.getProperty("password")
+        );
         createTable(cn);
         return cn;
     }
