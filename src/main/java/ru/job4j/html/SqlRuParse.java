@@ -7,8 +7,30 @@ import org.jsoup.select.Elements;
 import ru.job4j.grabber.utils.SqlRuDateTimeParser;
 
 public class SqlRuParse {
+    /**
+     * Слишком простой вариант. Лане не понравится. Но имеет место на существование.
+     * String url = "https://www.sql.ru/forum/job-offers/" + (i == 0 ? "" : i);
+     *
+     */
     public static void main(String[] args) throws Exception {
-        Document doc = Jsoup.connect("https://www.sql.ru/forum/job-offers").get();
+        SqlRuParse sqlRuParse = new SqlRuParse();
+        String url = "https://www.sql.ru/forum/job-offers/";
+        for (int i = 1; i <= 5; i++) {
+            System.out.println(System.lineSeparator() + "Page: " + i);
+            Document doc = sqlRuParse.parsePage(url);
+            Elements hrefs = doc.select(".sort_options").get(1).getElementsByTag("a");
+            for (Element href : hrefs) {
+                if (Integer.valueOf(i + 1).toString().equals(href.text())) {
+                    url = href.attr("href");
+                    break;
+                }
+            }
+            Thread.sleep(3000);
+        }
+    }
+
+    private Document parsePage(String url) throws Exception {
+        Document doc = Jsoup.connect(url).get();
         Elements row = doc.select(".postslisttopic");
         for (Element td : row) {
             Element href = td.child(0);
@@ -19,5 +41,6 @@ public class SqlRuParse {
             System.out.println(parent.child(5).text() + " => "
                     + sqlRuDateTimeParser.parse(parent.child(5).text()));
         }
+        return doc;
     }
 }
