@@ -16,28 +16,6 @@ public class Post {
     private String description;
     private LocalDateTime created;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        Post post = (Post) o;
-
-        if (title != null ? !title.equals(post.title) : post.title != null) {
-            return false;
-        }
-        if (link != null ? !link.equals(post.link) : post.link != null) {
-            return false;
-        }
-        if (description != null ? !description.equals(post.description) : post.description != null) {
-            return false;
-        }
-        return created != null ? created.equals(post.created) : post.created == null;
-    }
 
     @Override
     public int hashCode() {
@@ -57,5 +35,22 @@ public class Post {
                 + ", description='" + description + '\''
                 + ", created=" + created
                 + '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Post post = (Post) o;
+
+        if (id != post.id) {
+            return false;
+        }
+        return link != null ? link.equals(post.link) : post.link == null;
     }
 }
