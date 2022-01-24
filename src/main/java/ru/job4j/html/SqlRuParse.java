@@ -23,7 +23,7 @@ public class SqlRuParse {
     public static void main(String[] args) throws Exception {
         SqlRuParse sqlRuParse = new SqlRuParse();
         String url = "https://www.sql.ru/forum/job-offers/";
-        for (int i = 1; i <= 5; i++) {
+        for (int i = 0; i < 5; i++) {
             System.out.println(System.lineSeparator() + "Page: " + i);
             Document doc = sqlRuParse.parsePage(url + (i == 0 ? "" : i));
             Thread.sleep(3000);
