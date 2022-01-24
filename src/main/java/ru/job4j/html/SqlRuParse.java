@@ -9,22 +9,23 @@ import ru.job4j.grabber.utils.SqlRuDateTimeParser;
 public class SqlRuParse {
     /**
      * Слишком простой вариант. Лане не понравится. Но имеет место на существование.
+     * 1.
      * String url = "https://www.sql.ru/forum/job-offers/" + (i == 0 ? "" : i);
-     *
+     * 2.
+     * Elements hrefs = doc.select(".sort_options").get(1).getElementsByTag("a");
+     * for (Element href : hrefs) {
+     * if (Integer.valueOf(i + 1).toString().equals(href.text())) {
+     * url = href.attr("href");
+     * break;
+     * }
+     * }
      */
     public static void main(String[] args) throws Exception {
         SqlRuParse sqlRuParse = new SqlRuParse();
         String url = "https://www.sql.ru/forum/job-offers/";
         for (int i = 1; i <= 5; i++) {
             System.out.println(System.lineSeparator() + "Page: " + i);
-            Document doc = sqlRuParse.parsePage(url);
-            Elements hrefs = doc.select(".sort_options").get(1).getElementsByTag("a");
-            for (Element href : hrefs) {
-                if (Integer.valueOf(i + 1).toString().equals(href.text())) {
-                    url = href.attr("href");
-                    break;
-                }
-            }
+            Document doc = sqlRuParse.parsePage(url + (i == 0 ? "" : i));
             Thread.sleep(3000);
         }
     }
