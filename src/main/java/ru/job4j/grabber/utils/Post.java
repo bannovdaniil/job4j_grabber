@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 public class Post {
     private int id;
     private String title;
-
     private String link;
     private String description;
     private LocalDateTime created;
@@ -34,6 +33,10 @@ public class Post {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
     }
 
     @Override

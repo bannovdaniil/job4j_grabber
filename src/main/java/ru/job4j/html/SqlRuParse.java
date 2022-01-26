@@ -22,13 +22,7 @@ public class SqlRuParse implements Parse {
 
     public static void main(String[] args) throws Exception {
         SqlRuParse sqlRuParse = new SqlRuParse(new SqlRuDateTimeParser());
-        sqlRuParse.posts = new ArrayList<>();
-        String url = "https://www.sql.ru/forum/job-offers/";
-        for (int i = 0; i < 5; i++) {
-            System.out.println(System.lineSeparator() + "Page: " + (i + 1));
-            sqlRuParse.posts.addAll(sqlRuParse.list(url + (i == 0 ? "" : i)));
-            Thread.sleep(3000);
-        }
+        sqlRuParse.posts = sqlRuParse.list("https://www.sql.ru/forum/job-offers/");
     }
 
     /**
@@ -38,23 +32,39 @@ public class SqlRuParse implements Parse {
     public List<Post> list(String link) {
         List<Post> posts = new ArrayList<>();
         try {
-            Document doc = Jsoup.connect(link).get();
-            Elements rowTr = doc.getElementsByTag("tr");
-            int count = 0;
-            for (Element row : rowTr) {
-                Elements postLinks = row.getElementsByTag("td").select(".postslisttopic");
-                if (!postLinks.isEmpty() && !postLinks.get(0).toString().contains("closedTopic")) {
-                    Post post = detail(postLinks.get(0).getElementsByTag("a").get(0).attr("href"));
-                    if (post != null) {
-                        posts.add(post);
+            for (int i = 0; i < 5; i++) {
+                System.out.println(System.lineSeparator() + "Page: " + (i + 1));
+                Document doc = Jsoup.connect(link + (i == 0 ? "" : i)).get();
+                Elements rowTr = doc.getElementsByTag("tr");
+                int count = 0;
+                for (Element row : rowTr) {
+                    Elements postLinks = row.getElementsByTag("td").select(".postslisttopic");
+                    if (!postLinks.isEmpty() && !postLinks.get(0).toString().contains("closedTopic")) {
+                        Post post = detail(postLinks.get(0).getElementsByTag("a").get(0).attr("href"));
+                        if (checkPost(post)) {
+                            System.out.println("Post - added to base.");
+                            posts.add(post);
+                        }
+                        Thread.sleep(2000);
                     }
-                    Thread.sleep(2000);
                 }
             }
         } catch (Exception err) {
             err.printStackTrace();
         }
         return posts;
+    }
+
+    /**
+     * проверяем, соответствует ли пост нашим требованиям.
+     *
+     * @param post - проверяемый объект
+     * @return - соответствие критериям
+     */
+    private boolean checkPost(Post post) {
+        return post != null
+                && post.getTitle().toUpperCase().contains("JAVA")
+                && !post.getTitle().toUpperCase().contains("JAVASCRIPT");
     }
 
     /**
@@ -77,7 +87,7 @@ public class SqlRuParse implements Parse {
             }
             textBody = doc.select(".messageHeader");
             if (textBody.size() > 0) {
-                postTitle = textBody.get(0).text().replaceAll("\\[new\\]", "");
+                postTitle = textBody.get(0).ownText();
             }
             textBody = doc.select(".msgFooter");
             if (textBody.size() > 0) {
