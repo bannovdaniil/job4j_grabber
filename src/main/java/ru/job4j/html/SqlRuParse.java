@@ -4,17 +4,25 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import ru.job4j.grabber.Grab;
 import ru.job4j.grabber.Parse;
+import ru.job4j.grabber.Store;
 import ru.job4j.grabber.utils.DateTimeParser;
 import ru.job4j.grabber.utils.Post;
 import ru.job4j.grabber.utils.SqlRuDateTimeParser;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SqlRuParse implements Parse {
+public class SqlRuParse implements Parse, Store, Grab {
     private List<Post> posts;
     private final DateTimeParser dateTimeParser;
+    private Connection cn;
 
     public SqlRuParse(DateTimeParser dateTimeParser) {
         this.dateTimeParser = dateTimeParser;
@@ -101,5 +109,43 @@ public class SqlRuParse implements Parse {
             err.printStackTrace();
         }
         return result;
+    }
+
+    public void createTable() {
+        try (PreparedStatement statement = cn.prepareStatement(
+                "CREATE TABLE IF NOT EXISTS posts "
+                        + "("
+                        + "id SERIAL PRIMARY KEY,"
+                        + " name TEXT, created TIMESTAMP"
+                        + " name TEXT, created TIMESTAMP"
+                        + " name TEXT, created TIMESTAMP"
+                        + " name TEXT, created TIMESTAMP"
+                        + ");")) {
+            statement.execute();
+        } catch (
+                SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void init(Parse parse, Store store, Scheduler scheduler) throws SchedulerException {
+
+    }
+
+    @Override
+    public void save(Post post) {
+
+    }
+
+    @Override
+    public List<Post> getAll() {
+        return null;
+    }
+
+    @Override
+    public Post findById(int id) {
+        return null;
     }
 }
