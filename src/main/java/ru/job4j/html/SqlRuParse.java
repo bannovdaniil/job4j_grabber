@@ -143,9 +143,9 @@ public class SqlRuParse implements Parse, Store, Grab {
         try (PreparedStatement statement = cn.prepareStatement(
                 "CREATE TABLE IF NOT EXISTS posts "
                         + "("
-                        + "id SERIAL PRIMARY KEY,"
+                        + " id SERIAL PRIMARY KEY,"
                         + " title VARCHAR(255),"
-                        + " link VARCHAR(255),"
+                        + " link VARCHAR(255) UNIQUE,"
                         + " description TEXT,"
                         + " created TIMESTAMP"
                         + ");")) {
