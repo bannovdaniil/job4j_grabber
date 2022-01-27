@@ -39,21 +39,23 @@ public class PsqlStore implements Store, AutoCloseable {
 
     @Override
     public void save(Post post) {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO post (name, link, text, created) VALUES(?, ?, ?, ?);",
-                Statement.RETURN_GENERATED_KEYS)) {
-            statement.setString(1, post.getTitle());
-            statement.setString(2, post.getLink());
-            statement.setString(3, post.getDescription());
-            statement.setTimestamp(4, Timestamp.valueOf(post.getCreated()));
-            statement.execute();
-            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    post.setId(generatedKeys.getInt("id"));
+        if (findByLink(post.getLink()) == null) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO post (name, link, text, created) VALUES(?, ?, ?, ?);",
+                    Statement.RETURN_GENERATED_KEYS)) {
+                statement.setString(1, post.getTitle());
+                statement.setString(2, post.getLink());
+                statement.setString(3, post.getDescription());
+                statement.setTimestamp(4, Timestamp.valueOf(post.getCreated()));
+                statement.execute();
+                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        post.setId(generatedKeys.getInt("id"));
+                    }
                 }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 
@@ -79,6 +81,22 @@ public class PsqlStore implements Store, AutoCloseable {
         try (PreparedStatement statement =
                      connection.prepareStatement("SELECT * FROM post WHERE id = ?;")) {
             statement.setInt(1, id);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    post = getNewPost(resultSet);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return post;
+    }
+
+    public Post findByLink(String link) {
+        Post post = null;
+        try (PreparedStatement statement =
+                     connection.prepareStatement("SELECT * FROM post WHERE link = '?';")) {
+            statement.setString(1, link);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     post = getNewPost(resultSet);

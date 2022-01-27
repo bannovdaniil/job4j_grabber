@@ -5,12 +5,12 @@ import org.quartz.impl.StdSchedulerFactory;
 import ru.job4j.grabber.utils.Post;
 import ru.job4j.grabber.utils.SqlRuDateTimeParser;
 import ru.job4j.html.SqlRuParse;
-import ru.job4j.quartz.AlertRabbit;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.List;
 import java.util.Properties;
 
@@ -70,6 +70,34 @@ public class Grabber implements Grab {
         }
     }
 
+    public void web(Store store) {
+        new Thread(() -> {
+            try (ServerSocket server = new ServerSocket(Integer.parseInt(cfg.getProperty("port")))) {
+                while (!server.isClosed()) {
+                    Socket socket = server.accept();
+                    try (OutputStream out = socket.getOutputStream()) {
+                        out.write("HTTP/1.1 200 OK\r\n\r\n".getBytes());
+                        out.write("<html><head><meta charset=\"utf-8\"></head><body>".getBytes());
+                        for (Post post : store.getAll()) {
+                            out.write("<p>".getBytes());
+                            out.write(post.getCreated().toString().getBytes());
+                            String link = "<br><br><a href='" + post.getLink()
+                                    + "' target='_blank'>" + post.getTitle() + "</a><br><br>";
+                            out.write(link.getBytes());
+                            out.write(post.getDescription().replaceAll("\\.", ".<br>").getBytes());
+                            out.write("</p><hr>".getBytes());
+                            out.write(System.lineSeparator().getBytes());
+                        }
+                        out.write("</body>".getBytes());
+                    } catch (IOException io) {
+                        io.printStackTrace();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
 
     public static void main(String[] args) throws Exception {
         Grabber grab = new Grabber();
@@ -77,5 +105,6 @@ public class Grabber implements Grab {
         Scheduler scheduler = grab.scheduler();
         Store store = grab.store();
         grab.init(new SqlRuParse(new SqlRuDateTimeParser()), store, scheduler);
+        grab.web(store);
     }
 }

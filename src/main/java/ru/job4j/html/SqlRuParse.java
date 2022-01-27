@@ -74,7 +74,7 @@ public class SqlRuParse implements Parse {
                             System.out.println("Post - added to base.");
                             posts.add(post);
                         }
-                        Thread.sleep(2000);
+                        Thread.sleep(1000);
                     }
                 }
             }
