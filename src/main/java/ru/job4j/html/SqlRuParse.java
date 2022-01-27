@@ -4,20 +4,30 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
+import org.quartz.*;
+import org.quartz.impl.StdSchedulerFactory;
 import ru.job4j.grabber.Grab;
 import ru.job4j.grabber.Parse;
 import ru.job4j.grabber.Store;
 import ru.job4j.grabber.utils.DateTimeParser;
 import ru.job4j.grabber.utils.Post;
 import ru.job4j.grabber.utils.SqlRuDateTimeParser;
+import ru.job4j.quartz.AlertRabbit;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
+import static org.quartz.TriggerBuilder.newTrigger;
 
 public class SqlRuParse implements Parse, Store, Grab {
     private List<Post> posts;
@@ -29,8 +39,23 @@ public class SqlRuParse implements Parse, Store, Grab {
     }
 
     public static void main(String[] args) throws Exception {
+        Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
         SqlRuParse sqlRuParse = new SqlRuParse(new SqlRuDateTimeParser());
-        sqlRuParse.posts = sqlRuParse.list("https://www.sql.ru/forum/job-offers/");
+        sqlRuParse.init(sqlRuParse, sqlRuParse, scheduler);
+    }
+
+    /**
+     * подгружаем файл конфигурации
+     */
+    private static Properties initProperties(String configFile) {
+        Properties config = new Properties();
+        try (InputStream in = AlertRabbit.class.getClassLoader()
+                .getResourceAsStream(configFile)) {
+            config.load(in);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return config;
     }
 
     /**
@@ -111,26 +136,25 @@ public class SqlRuParse implements Parse, Store, Grab {
         return result;
     }
 
+    /**
+     * пока не нужно, но гдето там это явно будет нужно
+     */
     public void createTable() {
         try (PreparedStatement statement = cn.prepareStatement(
                 "CREATE TABLE IF NOT EXISTS posts "
                         + "("
                         + "id SERIAL PRIMARY KEY,"
-                        + " name TEXT, created TIMESTAMP"
-                        + " name TEXT, created TIMESTAMP"
-                        + " name TEXT, created TIMESTAMP"
-                        + " name TEXT, created TIMESTAMP"
+                        + " title VARCHAR(255),"
+                        + " link VARCHAR(255),"
+                        + " description TEXT,"
+                        + " created TIMESTAMP"
                         + ");")) {
+
             statement.execute();
         } catch (
                 SQLException e) {
             e.printStackTrace();
         }
-
-    }
-
-    @Override
-    public void init(Parse parse, Store store, Scheduler scheduler) throws SchedulerException {
 
     }
 
@@ -148,4 +172,50 @@ public class SqlRuParse implements Parse, Store, Grab {
     public Post findById(int id) {
         return null;
     }
+
+    @Override
+    public void init(Parse parse, Store store, Scheduler scheduler) throws SchedulerException {
+        try {
+            Properties config = initProperties("app.properties");
+            int parserInterval = Integer.parseInt(config.getProperty("parser.interval"));
+            scheduler.start();
+            JobDataMap jdata = new JobDataMap();
+            jdata.put("parser", parse);
+            jdata.put("store", store);
+            jdata.put("url", "https://www.sql.ru/forum/job-offers/");
+            JobDetail job = newJob(SqlRuParse.Quartz.class)
+                    .usingJobData(jdata)
+                    .build();
+            SimpleScheduleBuilder times = simpleSchedule()
+                    .withIntervalInSeconds(parserInterval)
+                    .repeatForever();
+            Trigger trigger = newTrigger()
+                    .startNow()
+                    .withSchedule(times)
+                    .build();
+            scheduler.scheduleJob(job, trigger);
+        } catch (Exception err) {
+            err.printStackTrace();
+        }
+    }
+
+    /**
+     * класс для запуска задачи по расписанию, бред! всеже это надо делать средствами ОС
+     */
+    public static class Quartz implements Job {
+        public Quartz() {
+            System.out.println(hashCode());
+        }
+
+        @Override
+        public void execute(JobExecutionContext context) {
+            String url = (String) context.getJobDetail().getJobDataMap().get("url");
+            Parse parser = (Parse) context.getJobDetail().getJobDataMap().get("parser");
+            Store store = (Store) context.getJobDetail().getJobDataMap().get("store");
+            System.out.println("Quardz: " + url);
+            List<Post> posts = parser.list(url);
+        }
+    }
+
+
 }
