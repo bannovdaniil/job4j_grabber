@@ -23,6 +23,11 @@ public class Post {
         this.created = created;
     }
 
+    public Post(int id, String title, String link, String description, LocalDateTime created) {
+        this(title, link, description, created);
+        this.id = id;
+    }
+
     public String getLink() {
         return link;
     }
@@ -37,6 +42,14 @@ public class Post {
 
     public String getTitle() {
         return title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public LocalDateTime getCreated() {
+        return created;
     }
 
     @Override
